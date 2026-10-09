@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Yahtzee Score</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
@@ -29,7 +34,7 @@
   --total: #26304a; --lead: #4a4220; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; padding-inline: 12px; padding-block: 12px 40px; }
+body { background: var(--bg); min-height: 100vh; color: var(--fg); font-family: var(--font); font-size: 16px; padding-inline: 12px; padding-block: 12px 40px; }
 .card { max-width: 640px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .row { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr)); align-items: stretch; border-bottom: 1px solid var(--line); min-height: 44px; }
 .row > * { min-width: 0; }
@@ -71,8 +76,11 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font); font-s
 .btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .confirm span { font-weight: 700; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
 </style>
-
+</head>
+<body>
 <main>
   <div class="card" id="card"></div>
   <div class="bar">
@@ -221,3 +229,5 @@ body { background: var(--bg); color: var(--fg); font-family: var(--font); font-s
   $('resetBtn').addEventListener('click', askReset);
 })();
 </script>
+</body>
+</html>
