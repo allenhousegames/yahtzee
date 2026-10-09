@@ -1,0 +1,223 @@
+<title>Yahtzee Score</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one label column plus four player columns, upper section, lower section, grand total. Red and navy match the original sheet. */
+:root {
+  --bg: #f6f4f1;
+  --surface: #ffffff;
+  --fg: #22232a;
+  --muted: #6b6d78;
+  --line: #dcd9d4;
+  --red: #d5493a;
+  --red-fg: #ffffff;
+  --navy: #1f3b78;
+  --navy-fg: #ffffff;
+  --total: #d7e3f4;
+  --lead: #fff1b8;
+  --font: 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161d; --surface: #1c1f29; --fg: #eeeef2; --muted: #9a9cab; --line: #2f3342;
+    --red: #e0604f; --red-fg: #ffffff; --navy: #2c4a95; --navy-fg: #ffffff;
+    --total: #26304a; --lead: #4a4220; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14161d; --surface: #1c1f29; --fg: #eeeef2; --muted: #9a9cab; --line: #2f3342;
+  --red: #e0604f; --red-fg: #ffffff; --navy: #2c4a95; --navy-fg: #ffffff;
+  --total: #26304a; --lead: #4a4220; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; padding-inline: 12px; padding-block: 12px 40px; }
+.card { max-width: 640px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.row { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(0, 1fr)); align-items: stretch; border-bottom: 1px solid var(--line); min-height: 44px; }
+.row > * { min-width: 0; }
+.lab { padding: 6px 8px; display: flex; flex-direction: column; justify-content: center; border-right: 3px solid var(--red); line-height: 1.15; }
+.lab b { font-weight: 700; font-size: 0.95rem; }
+.lab i { font-size: 0.72rem; color: var(--muted); }
+.cell { border-left: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; font-size: 1.1rem; }
+.cell:first-of-type { border-left: 0; }
+.cell input { width: 100%; height: 100%; min-height: 44px; border: 0; background: transparent; color: var(--fg); font: inherit; text-align: center; padding: 0; border-radius: 0; }
+.cell input:focus { outline: 2px solid var(--navy); outline-offset: -2px; background: var(--total); }
+.cell button.fixed { width: 100%; height: 100%; min-height: 44px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 1.1rem; cursor: pointer; }
+.cell button.fixed:focus-visible { outline: 2px solid var(--navy); outline-offset: -2px; }
+.cell button.fixed.hit { font-weight: 700; }
+.cell button.fixed.miss { color: var(--muted); }
+.cell button.fixed .ghost { color: var(--line); font-size: 0.8rem; }
+.banner { background: var(--navy); color: var(--navy-fg); text-align: center; font-style: italic; font-weight: 700; padding: 6px; letter-spacing: 0.04em; }
+.head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--red); color: var(--red-fg); min-height: 44px; }
+.head .lab { border-right-color: transparent; color: var(--red-fg); font-weight: 700; }
+.head .cell { border-left-color: rgba(255,255,255,0.3); }
+.head input { color: var(--red-fg); font-weight: 700; text-decoration: underline; font-size: 0.95rem; }
+.head input:focus { color: var(--fg); text-decoration: none; }
+.section-title { background: var(--red); color: var(--red-fg); padding: 6px 8px; font-weight: 700; font-style: italic; }
+.sub { background: color-mix(in srgb, var(--line) 35%, transparent); }
+.sub .cell small { color: var(--muted); font-size: 0.7rem; margin-left: 2px; }
+.sectotal { background: var(--total); font-weight: 700; }
+.sectotal .lab b { font-size: 1rem; }
+.yb { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 2px; width: 100%; max-width: 100px; }
+.yb button { width: 100%; max-width: 22px; aspect-ratio: 1; border: 2px solid var(--muted); background: transparent; border-radius: 3px; padding: 0; cursor: pointer; color: var(--fg); font-size: 0.65rem; line-height: 1; justify-self: center; }
+.yb button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--navy-fg); }
+.yb button:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.grand { background: var(--red); color: var(--red-fg); border-bottom: 0; min-height: 56px; }
+.grand .lab { border-right-color: transparent; font-style: italic; font-size: 1.1rem; color: var(--red-fg); }
+.grand .cell { font-size: 1.5rem; font-weight: 700; border-left-color: rgba(255,255,255,0.3); }
+.grand .cell.lead { background: var(--lead); color: var(--fg); }
+.bar { max-width: 640px; margin: 14px auto 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.bar p { margin: 0; color: var(--muted); font-size: 0.85rem; flex: 1 1 200px; }
+.btn { font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 8px; border: 2px solid var(--red); background: transparent; color: var(--red); cursor: pointer; min-height: 44px; }
+.btn.primary { background: var(--red); color: var(--red-fg); }
+.btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.confirm span { font-weight: 700; }
+</style>
+
+<main>
+  <div class="card" id="card"></div>
+  <div class="bar">
+    <p>Tap a straight, full house or Yahtzee once for its points and again to scratch it. Names and scores stay saved on this device.</p>
+    <div id="resetArea"><button class="btn" id="resetBtn" type="button">Reset</button></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var P = 4, KEY = 'yahtzee-score-v1';
+  var upper = [['1','1s','add all 1s'],['2','2s','add all 2s'],['3','3s','add all 3s'],['4','4s','add all 4s'],['5','5s','add all 5s'],['6','6s','add all 6s']];
+  var lower = [
+    ['tok','Three of a Kind','add all dice',0],['fok','Four of a Kind','add all dice',0],
+    ['fh','Full House','score 25',25],['ss','Small Straight (4)','score 30',30],['ls','Big Straight (5)','score 40',40],
+    ['ch','Chance','add all dice',0],['yz','Yahtzee!','score 50',50]
+  ];
+  var state = { names: ['Sam','Max','Bob','Kevin'], v: {}, yb: [0,0,0,0] };
+  try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.names && s.v && s.yb) state = s; } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  var card = document.getElementById('card');
+  function el(t, c, h) { var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
+  function row(cls, label, hint) {
+    var r = el('div', 'row ' + (cls || ''));
+    r.appendChild(el('div', 'lab', '<b>' + label + '</b>' + (hint ? '<i>' + hint + '</i>' : '')));
+    return r;
+  }
+  function numOf(x) { var n = parseInt(x, 10); return isNaN(n) ? 0 : n; }
+
+  card.appendChild(el('div', 'banner', 'Players'));
+  var head = row('head', 'Scoring');
+  for (var p = 0; p < P; p++) {
+    var c = el('div', 'cell'), inp = el('input'); inp.type = 'text'; inp.id = 'name' + p; inp.value = state.names[p];
+    inp.maxLength = 10; inp.setAttribute('aria-label', 'Player ' + (p + 1) + ' name');
+    (function (p, inp) { inp.addEventListener('input', function () { state.names[p] = inp.value; save(); calc(); }); })(p, inp);
+    c.appendChild(inp); head.appendChild(c);
+  }
+  card.appendChild(head);
+
+  function numberRow(key, label, hint) {
+    var r = row('', label, hint);
+    for (var p = 0; p < P; p++) {
+      var c = el('div', 'cell'), inp = el('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.id = key + '_' + p;
+      inp.setAttribute('aria-label', state.names[p] + ' ' + label);
+      inp.value = state.v[key + '_' + p] || '';
+      (function (k, inp) { inp.addEventListener('input', function () { state.v[k] = inp.value.replace(/[^0-9]/g, ''); if (inp.value !== state.v[k]) inp.value = state.v[k]; save(); calc(); }); })(key + '_' + p, inp);
+      c.appendChild(inp); r.appendChild(c);
+    }
+    return r;
+  }
+  function fixedRow(key, label, hint, pts) {
+    var r = row('', label, hint);
+    for (var p = 0; p < P; p++) {
+      var c = el('div', 'cell'), b = el('button', 'fixed'); b.type = 'button';
+      (function (k, b) {
+        function paint() {
+          var st = state.v[k] || 0;
+          b.className = 'fixed' + (st === 1 ? ' hit' : st === 2 ? ' miss' : '');
+          b.innerHTML = st === 1 ? pts : st === 2 ? '&times;' : '<span class="ghost">' + pts + '</span>';
+          b.setAttribute('aria-label', label + ': ' + (st === 1 ? pts + ' points' : st === 2 ? 'scratched' : 'empty'));
+        }
+        paint();
+        b.addEventListener('click', function () { state.v[k] = ((state.v[k] || 0) + 1) % 3; paint(); save(); calc(); });
+        b._paint = paint;
+      })(key + '_' + p, b);
+      c.appendChild(b); r.appendChild(c);
+    }
+    return r;
+  }
+  function outRow(cls, id, label, hint) {
+    var r = row(cls, label, hint);
+    for (var p = 0; p < P; p++) r.appendChild(el('div', 'cell', '<span id="' + id + '_' + p + '">0</span>'));
+    return r;
+  }
+
+  card.appendChild(el('div', 'section-title', 'Number combos'));
+  upper.forEach(function (u) { card.appendChild(numberRow('u' + u[0], u[1], u[2])); });
+  var sub = row('sub', 'Subtotal', 'need 63 for bonus');
+  for (p = 0; p < P; p++) sub.appendChild(el('div', 'cell', '<span id="sub_' + p + '">0</span><small>/63</small>'));
+  card.appendChild(sub);
+  card.appendChild(outRow('', 'bon', 'Bonus', '63 or higher = 35'));
+  card.appendChild(outRow('sectotal', 'sec1', 'Section total'));
+
+  card.appendChild(el('div', 'section-title', 'Special combos'));
+  lower.forEach(function (l) { card.appendChild(l[3] ? fixedRow('l' + l[0], l[1], l[2], l[3]) : numberRow('l' + l[0], l[1], l[2])); });
+
+  var ybRow = row('', 'Extra Yahtzees', 'tap a box for each one');
+  var ybButtons = [];
+  for (p = 0; p < P; p++) {
+    var c2 = el('div', 'cell'), g = el('div', 'yb'); ybButtons[p] = [];
+    for (var i = 0; i < 4; i++) {
+      var b2 = el('button'); b2.type = 'button'; b2.setAttribute('aria-label', 'Extra Yahtzee ' + (i + 1) + ' for player ' + (p + 1));
+      (function (p, i, b2) { b2.addEventListener('click', function () { state.yb[p] = state.yb[p] > i ? i : i + 1; save(); calc(); }); })(p, i, b2);
+      g.appendChild(b2); ybButtons[p].push(b2);
+    }
+    c2.appendChild(g); ybRow.appendChild(c2);
+  }
+  card.appendChild(ybRow);
+  card.appendChild(outRow('', 'ybp', 'Extra Yahtzee points', '100 each'));
+  card.appendChild(outRow('sectotal', 'sec2', 'Section total'));
+
+  var grand = row('grand', 'Grand Total');
+  for (p = 0; p < P; p++) grand.appendChild(el('div', 'cell', '<span id="grand_' + p + '">0</span>'));
+  card.appendChild(grand);
+
+  function $(id) { return document.getElementById(id); }
+  function calc() {
+    var totals = [];
+    for (var p = 0; p < P; p++) {
+      var sub = 0, low = 0;
+      upper.forEach(function (u) { sub += numOf(state.v['u' + u[0] + '_' + p]); });
+      var bonus = sub >= 63 ? 35 : 0;
+      lower.forEach(function (l) {
+        var k = 'l' + l[0] + '_' + p;
+        low += l[3] ? ((state.v[k] === 1) ? l[3] : 0) : numOf(state.v[k]);
+      });
+      var yb = state.yb[p] * 100;
+      var s1 = sub + bonus, s2 = low + yb, g = s1 + s2;
+      $('sub_' + p).textContent = sub; $('bon_' + p).textContent = bonus || ''; $('sec1_' + p).textContent = s1;
+      $('ybp_' + p).textContent = yb || ''; $('sec2_' + p).textContent = s2; $('grand_' + p).textContent = g;
+      ybButtons[p].forEach(function (b, i) { b.setAttribute('aria-pressed', state.yb[p] > i ? 'true' : 'false'); b.innerHTML = state.yb[p] > i ? '&#10003;' : ''; });
+      totals.push(g);
+    }
+    var max = Math.max.apply(null, totals), leaders = totals.filter(function (t) { return t === max; }).length;
+    for (p = 0; p < P; p++) $('grand_' + p).parentNode.classList.toggle('lead', max > 0 && leaders === 1 && totals[p] === max);
+  }
+  calc();
+
+  var area = $('resetArea');
+  function showReset() {
+    area.innerHTML = '<button class="btn" id="resetBtn" type="button">Reset</button>';
+    $('resetBtn').addEventListener('click', askReset);
+  }
+  function askReset() {
+    area.innerHTML = '<div class="confirm"><span>Clear all scores?</span><button class="btn primary" id="yes" type="button">Yes, clear</button><button class="btn" id="no" type="button">Cancel</button></div>';
+    $('yes').addEventListener('click', function () {
+      state.v = {}; state.yb = [0,0,0,0]; save();
+      card.querySelectorAll('input').forEach(function (i) { if (i.id.indexOf('name') !== 0) i.value = ''; });
+      card.querySelectorAll('button.fixed').forEach(function (b) { b._paint(); });
+      calc(); showReset();
+    });
+    $('no').addEventListener('click', showReset);
+    $('no').focus();
+  }
+  $('resetBtn').addEventListener('click', askReset);
+})();
+</script>
