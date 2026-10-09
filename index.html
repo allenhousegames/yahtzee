@@ -80,10 +80,18 @@ html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; }
 .made { max-width: 640px; margin: 22px auto 0; display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--muted); font-size: 0.85rem; }
 .made img { height: 28px; width: auto; }
+.topbar { max-width: 640px; margin: 0 auto 10px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-weight: 700; font-size: 0.9rem; }
+.sw { width: 46px; height: 26px; border-radius: 13px; border: 0; background: var(--line); position: relative; cursor: pointer; padding: 0; transition: background 0.15s; }
+.sw[aria-checked="true"] { background: var(--navy); }
+.sw .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.sw[aria-checked="true"] .knob { transform: translateX(20px); }
+.sw:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sw, .sw .knob { transition: none; } }
 </style>
 </head>
 <body>
 <main>
+  <div class="topbar"><label for="hideSw">Hide totals</label><button class="sw" id="hideSw" type="button" role="switch" aria-checked="true"><span class="knob"></span></button></div>
   <div class="card" id="card"></div>
   <div class="bar">
     <p>Tap a straight, full house or Yahtzee once for its points and again to scratch it. Names and scores stay saved on this device.</p>
@@ -101,7 +109,7 @@ body { margin: 0; }
     ['fh','Full House','score 25',25],['ss','Small Straight (4)','score 30',30],['ls','Big Straight (5)','score 40',40],
     ['ch','Chance','add all dice',0],['yz','Yahtzee!','score 50',50]
   ];
-  var state = { names: ['Sam','Max','Tony','Scoots'], v: {}, yb: [0,0,0,0] };
+  var state = { names: ['Sam','Max','Tony','Scoots'], v: {}, yb: [0,0,0,0], hide: true };
   try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.names && s.v && s.yb) state = s; } catch (e) {}
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
@@ -192,7 +200,8 @@ body { margin: 0; }
 
   function $(id) { return document.getElementById(id); }
   function calc() {
-    var totals = [];
+    var totals = [], H = state.hide !== false, DOTS = '\u2022\u2022\u2022\u2022';
+    $('hideSw').setAttribute('aria-checked', H ? 'true' : 'false');
     for (var p = 0; p < P; p++) {
       var sub = 0, low = 0;
       upper.forEach(function (u) { sub += numOf(state.v['u' + u[0] + '_' + p]); });
@@ -203,13 +212,13 @@ body { margin: 0; }
       });
       var yb = state.yb[p] * 100;
       var s1 = sub + bonus, s2 = low + yb, g = s1 + s2;
-      $('sub_' + p).textContent = sub; $('bon_' + p).textContent = bonus || ''; $('sec1_' + p).textContent = s1;
-      $('ybp_' + p).textContent = yb || ''; $('sec2_' + p).textContent = s2; $('grand_' + p).textContent = g;
+      $('sub_' + p).textContent = H ? DOTS : sub; $('bon_' + p).textContent = H ? DOTS : (bonus || ''); $('sec1_' + p).textContent = H ? DOTS : s1;
+      $('ybp_' + p).textContent = yb || ''; $('sec2_' + p).textContent = H ? DOTS : s2; $('grand_' + p).textContent = H ? DOTS : g;
       ybButtons[p].forEach(function (b, i) { b.setAttribute('aria-pressed', state.yb[p] > i ? 'true' : 'false'); b.innerHTML = state.yb[p] > i ? '&#10003;' : ''; });
       totals.push(g);
     }
     var max = Math.max.apply(null, totals), leaders = totals.filter(function (t) { return t === max; }).length;
-    for (p = 0; p < P; p++) $('grand_' + p).parentNode.classList.toggle('lead', max > 0 && leaders === 1 && totals[p] === max);
+    for (p = 0; p < P; p++) $('grand_' + p).parentNode.classList.toggle('lead', !H && max > 0 && leaders === 1 && totals[p] === max);
   }
   calc();
 
@@ -230,6 +239,7 @@ body { margin: 0; }
     $('no').focus();
   }
   $('resetBtn').addEventListener('click', askReset);
+  $('hideSw').addEventListener('click', function () { state.hide = !(state.hide !== false); save(); calc(); });
 })();
 </script>
 </body>
